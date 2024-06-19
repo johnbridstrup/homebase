@@ -1,4 +1,4 @@
-import uuid
+import math, uuid
 
 from common.tests import BaseTest
 from rooms.models import Room
@@ -84,6 +84,23 @@ class SensorTestCase(BaseTest):
         # Succeeds
         self.assertEqual(SensorData.objects.count(), 1)
         self.assertEqual(SensorData.objects.first().data, {"temperature": 25})
+
+    def test_api_get_data_for_sensor(self):
+        sensor = self.create_sensor()
+        sensor.register("Test Sensor", self.room)
+
+        # default pagination is 1000 data points
+        for _ in range(1002):
+            SensorData.objects.create(sensor=sensor, data={"temperature": 25})
+        response = self.client.get(f"/sensors/{sensor.id}/data/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 1000)
+        self.assertEqual(response.data["results"][0]["data"], {"temperature": 25})
+
+        next_ = response.data["next"]
+        response = self.client.get(next_)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 2)
 
     def test_api_register_sensor(self):
         sensor = self.create_sensor()

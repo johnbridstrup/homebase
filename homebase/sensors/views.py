@@ -42,6 +42,27 @@ class SensorViewSet(viewsets.ModelViewSet):
         room_obj = Room.objects.get(id=room)
         sensor.register(request.data.get("name"), room_obj)
         return Response(self.serializer_class(sensor).data)
+    
+    @action(
+        methods=["get"],
+        detail=True,
+        url_path="data",
+        renderer_classes=[
+            JSONRenderer,
+        ],
+    )
+    def get_data(self, request, pk=None):
+        sensor = self.get_object()
+        filts = {}
+        if "start" in request.query_params:
+            filts["timestamp__gte"] = request.query_params["start"]
+        if "end" in request.query_params:
+            filts["timestamp__lte"] = request.query_params["end"]
+        data = sensor.data.filter(**filts)
+        paginated_data = self.paginate_queryset(data)
+        if paginated_data is not None:
+            return self.get_paginated_response(SensorDataSerializer(paginated_data, many=True).data)
+        return Response(SensorDataSerializer(data, many=True).data)
 
 
 class SensorDataViewSet(viewsets.ModelViewSet):
