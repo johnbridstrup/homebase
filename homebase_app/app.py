@@ -1,10 +1,13 @@
 import os
 import requests
 import dash
+import dash_table
 from dash import dcc, html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import pandas as pd
 import plotly.express as px
+
+from components.unregistered_table import unregistered_table
 
 
 app = dash.Dash(__name__)
@@ -19,6 +22,7 @@ app.layout = html.Div([
     dcc.Dropdown(id="sensor-data-select", options=[]),
     html.P("Sensor History: "),
     dcc.Graph(id='sensor-graph'),
+    unregistered_table,
 ])
 
 def get_sensors():
@@ -41,16 +45,26 @@ def get_sensor_data(id_):
 )
 def load_data_on_start(_):
     data = get_sensors()
+    print(data)
     return data
 
 @app.callback(
-    Output('sensor-select', 'options'),
+    [
+        Output('sensor-select', 'options'),
+        Output('unregistered-table', 'data'),
+    ],
     Input('all-sensors', 'data')
 )
 def update_dropdown_options(data):
     if data:
-        options = [{'label': item['name'], 'value': item['id']} for item in data]  # Adjust based on your data structure
-        return options
+        options = [{'label': item['name'], 'value': item['id']} for item in data if item["status"] != "Unregistered"]
+        unreg_sensors = [
+            {
+                "name": item['name'], 
+                "sensor_type": item['sensor_type'],
+                "id": item['id'],
+            } for item in data if item["status"] == "Unregistered"]
+        return options, unreg_sensors
     return []
 
 @app.callback(
@@ -79,6 +93,24 @@ def update_graph(data, value, _):
     data = pd.read_json(data)
     fig = px.line(data, x='timestamp', y=value)
     return fig
+
+@app.callback(
+    Output('register-status', 'children'),
+    [Input('register-button', 'n_clicks')],
+    [State('sensor-name', 'value'), State('unregistered-table', 'selected_cells')],
+)
+def register_sensor(n_clicks, name, selected_cells):
+    if n_clicks is 0:
+        return ""
+    if name:
+        id_ = selected_cells[0]["row_id"]
+        response = requests.post(f'{SERVER_URL}/sensors/{id_}/register/', json={"name": name})
+        if response.status_code == 200:
+            return "Sensor registered successfully"
+        else:
+            return "Failed to register sensor"
+    else:
+        return "Please enter a sensor name"
 
 if __name__ == '__main__':
     app.run_server(debug=True)

@@ -39,9 +39,11 @@ class SensorViewSet(viewsets.ModelViewSet):
                 room = room[0]
             else:
                 raise ValueError("Only assign one room")
-        room_obj = Room.objects.get(id=room)
-        sensor.register(request.data.get("name"), room_obj)
-        return Response(self.serializer_class(sensor).data)
+        sensor.register(request.data.get("name"))
+        if room is not None:
+            room_obj = Room.objects.get(id=room)
+            sensor.add_to_room(room_obj)
+        return Response(self.serializer_class(sensor).data, status=status.HTTP_200_OK)
     
     @action(
         methods=["get"],

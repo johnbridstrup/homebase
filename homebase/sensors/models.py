@@ -16,10 +16,13 @@ class Sensor(models.Model):
     status = models.CharField(max_length=2, choices=SensorStatus.choices, default=SensorStatus.UNREGISTERED)
     last_seen = models.DateTimeField(null=True, blank=True)
 
-    def register(self, name, room):
+    def register(self, name,):
         self.name = name
-        self.room = room
         self.status = self.SensorStatus.ACTIVE
+        self.save()
+
+    def add_to_room(self, room):
+        self.room = room
         self.save()
 
 
