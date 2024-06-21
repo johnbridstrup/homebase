@@ -1,0 +1,6 @@
+port: 8080
+dest: http://localhost:8000
+sensor_type: "temperature"
+label: "temperature"
+initial_value: 65.0
+identifier: "a-reusable-temp-sensor"

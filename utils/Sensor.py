@@ -1,4 +1,4 @@
-import asyncio, random
+import argparse, asyncio, random, uuid, yaml
 from aiohttp import web, ClientSession
 from aiohttp.client_exceptions import ClientConnectionError
 
@@ -6,10 +6,10 @@ from aiohttp.client_exceptions import ClientConnectionError
 class Sensor:
     RPC_INTERFACE = {}
 
-    def __init__(self, port, dest, indentifier, sensor_type="generic"):
+    def __init__(self, port, dest, identifier, sensor_type="generic", **kwargs):
         self._port = port
         self._dest = dest
-        self._identifier = indentifier
+        self._identifier = identifier
         self._sensor_type = sensor_type
         self._freq = 0.5  # Frequency of data generation in Hz
 
@@ -18,6 +18,10 @@ class Sensor:
 
         # Routing
         self._setup_rpc_interface()
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
     # Properties
     @property
@@ -60,8 +64,6 @@ class Sensor:
                     await asyncio.sleep(2)
                     print("retrying...")
     
-    
-    
     # Internal Methods
     def _setup_rpc_interface(self):
         for k in self.RPC_INTERFACE.keys():
@@ -88,23 +90,25 @@ class Sensor:
         raise NotImplementedError("You must implement this method in a subclass")
     
 
-class TemperatureSensor(Sensor):
+class MarkovRandomSensor(Sensor):
     RPC_INTERFACE = {
         "setSampleRate": {"rate": {"type": "number"}},
         "getSampleRate": {},
     }
     
     def __init__(self, *args, **kwargs):
+        _init = kwargs.pop("initial_value", 75.0)
+        label = kwargs.pop("label", "temperature")
         super().__init__(*args, **kwargs)
-        self._temperature = 75.0
-
+        self._init = _init
+        self._label = label
     # Abstract method implementation
     def gen_data(self):
-        self._temperature += random.gauss(0, self._freq)
+        self._init += random.gauss(0, self._freq)
         return {
             "identifier": self._identifier,
             "data": {
-                "temperature": self._temperature
+                self._label: self._init,
             }
         }
 
@@ -125,8 +129,29 @@ class TemperatureSensor(Sensor):
         return web.json_response({"rate": self._freq})
 
 
+parser = argparse.ArgumentParser(description="Spawn sensors to send data to the server")
+parser.add_argument("--port", type=int, help="Port to run the sensor server on", default=8080)
+parser.add_argument("--dest", type=str, help="URL of the server", default="http://localhost:8000")
+parser.add_argument("--identifier", type=str, help="Identifier of the sensor", required=False)
+parser.add_argument("--sensor_type", type=str, help="Type of sensor", default="generic")
+parser.add_argument("--config", type=str, help="Path to a config file", default=None)
+
+
 async def main():
-    sensor = TemperatureSensor(8080, "http://localhost:8000", "Test Sensor 3")
+    args = parser.parse_args()
+    if args.config:
+        with open(args.config, 'r') as f:
+            config = yaml.safe_load(f)
+        sensor = MarkovRandomSensor.from_config(config)
+    else:
+        conf = {
+            "port": args.port,
+            "dest": args.dest,
+            "sensor_type": args.sensor_type,
+            "indentifier": args.identifier or str(uuid.uuid4()),
+        }
+        
+        sensor = MarkovRandomSensor(**conf)
     site = await sensor.get_site()
     await site.start()
     print(f"Sensor server running on http://localhost:{sensor._port}")
