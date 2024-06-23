@@ -97,6 +97,8 @@ def update_dropdown_options(data):
     [Input('sensor-select', 'value')],
 )
 def sensor_data_options(id_):
+    # NOTE: have this both plot the first key and populate the dropdown
+    # That will let me have an auto-refresh on the graph
     data = get_sensor_data(id_)
     if data is None:
         return [], {}
