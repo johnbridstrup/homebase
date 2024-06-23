@@ -34,6 +34,7 @@ class SensorViewSet(viewsets.ModelViewSet):
     def register_sensor(self, request, pk=None):
         sensor = self.get_object()
         room = request.data.get("room")
+        print(request.data)
         if isinstance(room, list):
             if len(room) == 1:
                 room = room[0]

@@ -1,6 +1,6 @@
 import dash_bootstrap_components as dbc
 import dash_table
-from dash import html
+from dash import dcc, html
 
 
 unregistered_table = html.Div([
@@ -16,12 +16,13 @@ unregistered_table = html.Div([
                 data=[],
                 row_selectable='single',
             ),
-        ],width={'size':1,'offset':0,'order':'1'}),
+        ]),
         dbc.Col([
             html.H2("Register Sensor"),
             dbc.Input(id='sensor-name', placeholder='Sensor Name', type='text'),
+            dcc.Dropdown(id="room-select", options=[]),
             dbc.Button('Register', id='register-button', color='primary'),
             html.Div(id='register-status'),
-        ],width={'size':1,'offset':0,'order':'1'}),
+        ]),
     ]),
 ])
