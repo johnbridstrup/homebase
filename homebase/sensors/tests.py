@@ -26,13 +26,13 @@ class SensorTestCase(BaseTest):
     def test_register(self):
         sensor = self.create_sensor()
         self.assertEqual(sensor.status, Sensor.SensorStatus.UNREGISTERED)
-        sensor.register("Test Sensor", self.room)
+        sensor.register("Test Sensor")
         self.assertEqual(sensor.name, "Test Sensor")
         self.assertEqual(sensor.status, Sensor.SensorStatus.ACTIVE)
 
     def test_sensor_data(self):
         sensor = self.create_sensor()
-        sensor.register("Test Sensor", self.room)
+        sensor.register("Test Sensor")
         SensorData.objects.create(sensor=sensor, data={"temperature": 25})
         self.assertEqual(sensor.data.count(), 1)
         self.assertEqual(sensor.data.first().data, {"temperature": 25})
@@ -40,7 +40,7 @@ class SensorTestCase(BaseTest):
     
     def test_api_get_sensors(self):
         sensor = self.create_sensor()
-        sensor.register("Test Sensor", self.room)
+        sensor.register("Test Sensor")
         response = self.client.get("/sensors/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data["results"]), 1)
@@ -60,7 +60,7 @@ class SensorTestCase(BaseTest):
         self.assertEqual(r2.data["id"], sensor.id)
         self.assertEqual(r2.data["status"], Sensor.SensorStatus.UNREGISTERED.label)
 
-        sensor.register("Test Sensor", self.room)
+        sensor.register("Test Sensor")
         r3 = self.client.get(f"/sensors/{sensor.id}/")
         self.assertEqual(r3.status_code, 200)
         self.assertEqual(r3.data["id"], sensor.id)
@@ -79,7 +79,7 @@ class SensorTestCase(BaseTest):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(SensorData.objects.count(), 0)
 
-        sensor.register("Test Sensor", self.room)
+        sensor.register("Test Sensor")
         response = self.client.post("/sensordata/", {"identifier": sensor.identifier, "data": {"temperature": 25}}, format="json")
         # Succeeds
         self.assertEqual(SensorData.objects.count(), 1)
@@ -87,7 +87,7 @@ class SensorTestCase(BaseTest):
 
     def test_api_get_data_for_sensor(self):
         sensor = self.create_sensor()
-        sensor.register("Test Sensor", self.room)
+        sensor.register("Test Sensor")
 
         # default pagination is 1000 data points
         for _ in range(1002):

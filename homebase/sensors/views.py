@@ -43,7 +43,7 @@ class SensorViewSet(viewsets.ModelViewSet):
         if room is not None:
             room_obj = Room.objects.get(id=room)
             sensor.add_to_room(room_obj)
-        return Response(self.serializer_class(sensor).data, status=status.HTTP_200_OK)
+        return Response(self.serializer_class(sensor, context={"request": request}).data, status=status.HTTP_200_OK)
     
     @action(
         methods=["get"],
@@ -63,7 +63,7 @@ class SensorViewSet(viewsets.ModelViewSet):
         data = sensor.data.filter(**filts)
         paginated_data = self.paginate_queryset(data)
         if paginated_data is not None:
-            return self.get_paginated_response(SensorDataSerializer(paginated_data, many=True).data)
+            return self.get_paginated_response(SensorDataSerializer(paginated_data, many=True, context={"request": request}).data)
         return Response(SensorDataSerializer(data, many=True).data)
 
 

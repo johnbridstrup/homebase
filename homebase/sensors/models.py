@@ -16,7 +16,7 @@ class Sensor(models.Model):
     status = models.CharField(max_length=2, choices=SensorStatus.choices, default=SensorStatus.UNREGISTERED)
     last_seen = models.DateTimeField(null=True, blank=True)
 
-    def register(self, name,):
+    def register(self, name):
         self.name = name
         self.status = self.SensorStatus.ACTIVE
         self.save()
